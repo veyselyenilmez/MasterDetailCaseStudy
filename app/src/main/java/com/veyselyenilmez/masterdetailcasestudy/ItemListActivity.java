@@ -2,6 +2,7 @@ package com.veyselyenilmez.masterdetailcasestudy;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -12,14 +13,28 @@ import androidx.appcompat.widget.Toolbar;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.kaopiz.kprogresshud.KProgressHUD;
+import com.veyselyenilmez.masterdetailcasestudy.data.model.GamesList;
+import com.veyselyenilmez.masterdetailcasestudy.data.model.Game;
+import com.veyselyenilmez.masterdetailcasestudy.data.network.APIService;
+import com.veyselyenilmez.masterdetailcasestudy.data.network.APIUtils;
 import com.veyselyenilmez.masterdetailcasestudy.dummy.DummyContent;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import es.dmoral.toasty.Toasty;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 
 /**
  * An activity representing a list of Items. This activity
@@ -36,6 +51,13 @@ public class ItemListActivity extends AppCompatActivity {
      * device.
      */
     private boolean mTwoPane;
+
+    private APIService mAPIService;
+    public GamesList gamesListGames = new GamesList();
+
+    private KProgressHUD hud;
+
+    public List<Game> games = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,14 +85,19 @@ public class ItemListActivity extends AppCompatActivity {
             mTwoPane = true;
         }
 
+
         View recyclerView = findViewById(R.id.item_list);
         assert recyclerView != null;
         setupRecyclerView((RecyclerView) recyclerView);
+        showLoadingDialog();
+
+        getDetailedDataFromAPI(3498);
     }
 
     private void setupRecyclerView(@NonNull RecyclerView recyclerView) {
         recyclerView.setAdapter(new SimpleItemRecyclerViewAdapter(this, DummyContent.ITEMS, mTwoPane));
     }
+
 
     public static class SimpleItemRecyclerViewAdapter
             extends RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder> {
@@ -139,5 +166,82 @@ public class ItemListActivity extends AppCompatActivity {
                 mContentView = (TextView) view.findViewById(R.id.content);
             }
         }
+    }
+
+
+    public void getDataFromAPI() {
+
+        mAPIService = APIUtils.getAPIService();
+
+
+        mAPIService.getData().enqueue(new Callback<GamesList>() {
+            @Override
+            public void onResponse(Call<GamesList> call, Response<GamesList> response) {
+
+                if (response.isSuccess()) {
+
+                    GamesList gamesList = response.body();
+
+                    System.out.println(gamesList.toString());
+
+                    if (response.body() == null)
+                        Log.d("", "response body is null");
+
+                    hud.dismiss();
+                }
+            }
+            @Override
+            public void onFailure(Call<GamesList> call, Throwable t) {
+                hud.dismiss();
+                Toasty.error(ItemListActivity.this, "There is a problem about connection to the server!", Toast.LENGTH_SHORT).show();
+                Log.e("", "Unable to submit post to API.");
+
+            }
+        });
+    }
+
+
+    public void getDetailedDataFromAPI(int id) {
+
+        mAPIService = APIUtils.getAPIService();
+
+        String ids= String.valueOf(id);
+
+        mAPIService.getDetailedDataById(ids).enqueue(new Callback<Game>() {
+            @Override
+            public void onResponse(Call<Game> call, Response<Game> response) {
+
+                if (response.isSuccess()) {
+
+                    Game game = response.body();
+
+                    System.out.println(game.toString());
+
+                    if (response.body() == null)
+                        Log.d("", "response body is null");
+
+                    hud.dismiss();
+                }
+            }
+            @Override
+            public void onFailure(Call<Game> call, Throwable t) {
+                hud.dismiss();
+                Toasty.error(ItemListActivity.this, "There is a problem about connection to the server!", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+
+    public void showLoadingDialog() {
+        hud = KProgressHUD.create(ItemListActivity.this)
+                .setStyle(KProgressHUD.Style.SPIN_INDETERMINATE)
+                .setLabel("Please wait")
+                .setDetailsLabel("Getting data from API...")
+                .setCancellable(true)
+                .setAnimationSpeed(1)
+                .setDimAmount(0.78f)
+                .setCornerRadius(12)
+                .setWindowColor(Color.DKGRAY)
+                .show();
     }
 }
