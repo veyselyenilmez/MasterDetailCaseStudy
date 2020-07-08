@@ -18,23 +18,17 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.kaopiz.kprogresshud.KProgressHUD;
 import com.veyselyenilmez.masterdetailcasestudy.data.model.GamesList;
 import com.veyselyenilmez.masterdetailcasestudy.data.model.Game;
 import com.veyselyenilmez.masterdetailcasestudy.data.network.APIService;
 import com.veyselyenilmez.masterdetailcasestudy.data.network.APIUtils;
-import com.veyselyenilmez.masterdetailcasestudy.dummy.DummyContent;
 
-import java.util.ArrayList;
-import java.util.List;
 
-import es.dmoral.toasty.Toasty;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-
 
 /**
  * An activity representing a list of Items. This activity
@@ -50,32 +44,22 @@ public class ItemListActivity extends AppCompatActivity {
      * Whether or not the activity is in two-pane mode, i.e. running on a tablet
      * device.
      */
-    private boolean mTwoPane;
-
-    private APIService mAPIService;
-    public GamesList gamesListGames = new GamesList();
+    private static boolean mTwoPane;
 
     private KProgressHUD hud;
 
-    public List<Game> games = new ArrayList<>();
+    private static APIService mAPIService = APIUtils.getAPIService();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_item_list);
 
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setTitle(getTitle());
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
 
         if (findViewById(R.id.item_detail_container) != null) {
             // The detail container view will be present only in the
@@ -85,17 +69,14 @@ public class ItemListActivity extends AppCompatActivity {
             mTwoPane = true;
         }
 
-
-        View recyclerView = findViewById(R.id.item_list);
-        assert recyclerView != null;
-        setupRecyclerView((RecyclerView) recyclerView);
         showLoadingDialog();
 
-        getDetailedDataFromAPI(3498);
+        getDataFromAPI();
+
     }
 
-    private void setupRecyclerView(@NonNull RecyclerView recyclerView) {
-        recyclerView.setAdapter(new SimpleItemRecyclerViewAdapter(this, DummyContent.ITEMS, mTwoPane));
+    private void setupRecyclerView(@NonNull RecyclerView recyclerView, GamesList gamesList) {
+        recyclerView.setAdapter(new SimpleItemRecyclerViewAdapter(this, gamesList, mTwoPane));
     }
 
 
@@ -103,34 +84,32 @@ public class ItemListActivity extends AppCompatActivity {
             extends RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder> {
 
         private final ItemListActivity mParentActivity;
-        private final List<DummyContent.DummyItem> mValues;
+        private final GamesList gamesList;
         private final boolean mTwoPane;
         private final View.OnClickListener mOnClickListener = new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                DummyContent.DummyItem item = (DummyContent.DummyItem) view.getTag();
-                if (mTwoPane) {
-                    Bundle arguments = new Bundle();
-                    arguments.putString(ItemDetailFragment.ARG_ITEM_ID, item.id);
-                    ItemDetailFragment fragment = new ItemDetailFragment();
-                    fragment.setArguments(arguments);
-                    mParentActivity.getSupportFragmentManager().beginTransaction()
-                            .replace(R.id.item_detail_container, fragment)
-                            .commit();
-                } else {
-                    Context context = view.getContext();
-                    Intent intent = new Intent(context, ItemDetailActivity.class);
-                    intent.putExtra(ItemDetailFragment.ARG_ITEM_ID, item.id);
-
-                    context.startActivity(intent);
-                }
+            public void onClick(final View view) {
+                Game game = (Game) view.getTag();
+                mAPIService.getDetailedDataById(game.getId()).enqueue(new Callback<Game>() {
+                    @Override
+                    public void onResponse(Call<Game> call, Response<Game> response) {
+                        if (response.isSuccess()) {
+                            Game game = response.body();
+                            initiateDetailedScreen(mParentActivity, game, view);
+                        }
+                    }
+                    @Override
+                    public void onFailure(Call<Game> call, Throwable t) {
+                        Log.e("getDetailedDataById","Request failed.");
+                    }
+                });
             }
         };
 
         SimpleItemRecyclerViewAdapter(ItemListActivity parent,
-                                      List<DummyContent.DummyItem> items,
+                                      GamesList gamesList,
                                       boolean twoPane) {
-            mValues = items;
+            this.gamesList = gamesList;
             mParentActivity = parent;
             mTwoPane = twoPane;
         }
@@ -144,16 +123,16 @@ public class ItemListActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(final ViewHolder holder, int position) {
-            holder.mIdView.setText(mValues.get(position).id);
-            holder.mContentView.setText(mValues.get(position).content);
+            holder.mIdView.setText(String.valueOf(position+1));
+            holder.mContentView.setText(gamesList.getGames().get(position).getName());
 
-            holder.itemView.setTag(mValues.get(position));
+            holder.itemView.setTag(gamesList.getGames().get(position));
             holder.itemView.setOnClickListener(mOnClickListener);
         }
 
         @Override
         public int getItemCount() {
-            return mValues.size();
+            return gamesList.getGames().size();
         }
 
         class ViewHolder extends RecyclerView.ViewHolder {
@@ -170,22 +149,17 @@ public class ItemListActivity extends AppCompatActivity {
 
 
     public void getDataFromAPI() {
-
-        mAPIService = APIUtils.getAPIService();
-
-
+        APIService mAPIService = APIUtils.getAPIService();
         mAPIService.getData().enqueue(new Callback<GamesList>() {
             @Override
             public void onResponse(Call<GamesList> call, Response<GamesList> response) {
-
                 if (response.isSuccess()) {
 
                     GamesList gamesList = response.body();
 
-                    System.out.println(gamesList.toString());
-
-                    if (response.body() == null)
-                        Log.d("", "response body is null");
+                    View recyclerView = findViewById(R.id.item_list);
+                    assert recyclerView != null;
+                    setupRecyclerView((RecyclerView) recyclerView, gamesList);
 
                     hud.dismiss();
                 }
@@ -193,44 +167,27 @@ public class ItemListActivity extends AppCompatActivity {
             @Override
             public void onFailure(Call<GamesList> call, Throwable t) {
                 hud.dismiss();
-                Toasty.error(ItemListActivity.this, "There is a problem about connection to the server!", Toast.LENGTH_SHORT).show();
-                Log.e("", "Unable to submit post to API.");
-
+                Log.e("getDataFromAPI","Request failed.");
             }
         });
     }
 
-
-    public void getDetailedDataFromAPI(int id) {
-
-        mAPIService = APIUtils.getAPIService();
-
-        String ids= String.valueOf(id);
-
-        mAPIService.getDetailedDataById(ids).enqueue(new Callback<Game>() {
-            @Override
-            public void onResponse(Call<Game> call, Response<Game> response) {
-
-                if (response.isSuccess()) {
-
-                    Game game = response.body();
-
-                    System.out.println(game.toString());
-
-                    if (response.body() == null)
-                        Log.d("", "response body is null");
-
-                    hud.dismiss();
-                }
-            }
-            @Override
-            public void onFailure(Call<Game> call, Throwable t) {
-                hud.dismiss();
-                Toasty.error(ItemListActivity.this, "There is a problem about connection to the server!", Toast.LENGTH_SHORT).show();
-            }
-        });
+    public static void initiateDetailedScreen(ItemListActivity mParentActivity, Game game, View view) {
+        if (mTwoPane) {
+            Bundle arguments = new Bundle();
+            arguments.putSerializable(ItemDetailFragment.ARG_GAME, game);
+            ItemDetailFragment fragment = new ItemDetailFragment();
+            fragment.setArguments(arguments);
+            mParentActivity.getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.item_detail_container, fragment)
+                    .commit();
+        } else {
+            Context context = view.getContext();
+            Intent intent = new Intent(context, ItemDetailActivity.class);
+            intent.putExtra(ItemDetailFragment.ARG_GAME, game);
+            context.startActivity(intent);
+        }
     }
-
 
     public void showLoadingDialog() {
         hud = KProgressHUD.create(ItemListActivity.this)

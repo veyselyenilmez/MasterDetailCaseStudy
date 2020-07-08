@@ -11,7 +11,7 @@ import retrofit2.http.Path;
 public interface APIService {
 
     @Headers("Content-Type: application/json")
-    @GET("games?page_size=10&page=1")
+    @GET("games?page_size=20&page=1")
     Call<GamesList> getData();
 
 

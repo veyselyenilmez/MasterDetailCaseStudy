@@ -2,6 +2,7 @@
 package com.veyselyenilmez.masterdetailcasestudy.data.model;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -11,7 +12,7 @@ public class GamesList implements Serializable
 
     @SerializedName("results")
     @Expose
-    private List<Game> games = null;
+    private List<Game> games = new ArrayList<Game>();
 
     public GamesList() {
     }

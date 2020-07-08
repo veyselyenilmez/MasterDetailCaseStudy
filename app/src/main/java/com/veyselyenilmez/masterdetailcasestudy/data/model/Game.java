@@ -9,7 +9,7 @@ public class Game implements Serializable {
 
     @SerializedName("id")
     @Expose
-    private Integer id;
+    private String id;
     @SerializedName("name")
     @Expose
     private String name;
@@ -38,7 +38,7 @@ public class Game implements Serializable {
      */
     public Game(Integer id, String name, String backgroundImage, Double rating) {
         super();
-        this.id = id;
+        this.id = String.valueOf(id);
 
         this.name = name;
 
@@ -56,12 +56,35 @@ public class Game implements Serializable {
         this.backgroundImage = background_image;
     }
 
+    public String getDescription() {
+        return description;
+    }
 
-    public Integer getId() {
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Double getRating() {
+        return rating;
+    }
+
+    public void setRating(Double rating) {
+        this.rating = rating;
+    }
+
+    public String getReleased() {
+        return released;
+    }
+
+    public void setReleased(String released) {
+        this.released = released;
+    }
+
+    public String getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(String id) {
         this.id = id;
     }
 
