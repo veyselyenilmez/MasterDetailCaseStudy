@@ -10,14 +10,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.appcompat.widget.Toolbar;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
-
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.kaopiz.kprogresshud.KProgressHUD;
 import com.veyselyenilmez.masterdetailcasestudy.data.model.GamesList;
@@ -25,7 +23,7 @@ import com.veyselyenilmez.masterdetailcasestudy.data.model.Game;
 import com.veyselyenilmez.masterdetailcasestudy.data.network.APIService;
 import com.veyselyenilmez.masterdetailcasestudy.data.network.APIUtils;
 
-
+import es.dmoral.toasty.Toasty;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -55,11 +53,9 @@ public class ItemListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_item_list);
 
-
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setTitle(getTitle());
-
 
         if (findViewById(R.id.item_detail_container) != null) {
             // The detail container view will be present only in the
@@ -72,13 +68,11 @@ public class ItemListActivity extends AppCompatActivity {
         showLoadingDialog();
 
         getDataFromAPI();
-
     }
 
     private void setupRecyclerView(@NonNull RecyclerView recyclerView, GamesList gamesList) {
         recyclerView.setAdapter(new SimpleItemRecyclerViewAdapter(this, gamesList, mTwoPane));
     }
-
 
     public static class SimpleItemRecyclerViewAdapter
             extends RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder> {
@@ -95,12 +89,13 @@ public class ItemListActivity extends AppCompatActivity {
                     public void onResponse(Call<Game> call, Response<Game> response) {
                         if (response.isSuccess()) {
                             Game game = response.body();
-                            initiateDetailedScreen(mParentActivity, game, view);
+                            initiateDetailedScreen(mParentActivity, game, view, mTwoPane);
                         }
                     }
+
                     @Override
                     public void onFailure(Call<Game> call, Throwable t) {
-                        Log.e("getDetailedDataById","Request failed.");
+                        Log.e("getDetailedDataById", "Request failed.");
                     }
                 });
             }
@@ -108,12 +103,13 @@ public class ItemListActivity extends AppCompatActivity {
 
         SimpleItemRecyclerViewAdapter(ItemListActivity parent,
                                       GamesList gamesList,
-                                      boolean twoPane) {
+                                      boolean mTwoPane) {
             this.gamesList = gamesList;
             mParentActivity = parent;
-            mTwoPane = twoPane;
+            this.mTwoPane = mTwoPane;
         }
 
+        @NonNull
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View view = LayoutInflater.from(parent.getContext())
@@ -123,7 +119,7 @@ public class ItemListActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(final ViewHolder holder, int position) {
-            holder.mIdView.setText(String.valueOf(position+1));
+            holder.mIdView.setText(String.valueOf(position + 1));
             holder.mContentView.setText(gamesList.getGames().get(position).getName());
 
             holder.itemView.setTag(gamesList.getGames().get(position));
@@ -141,12 +137,11 @@ public class ItemListActivity extends AppCompatActivity {
 
             ViewHolder(View view) {
                 super(view);
-                mIdView = (TextView) view.findViewById(R.id.id_text);
-                mContentView = (TextView) view.findViewById(R.id.content);
+                mIdView = view.findViewById(R.id.id_text);
+                mContentView = view.findViewById(R.id.content);
             }
         }
     }
-
 
     public void getDataFromAPI() {
         APIService mAPIService = APIUtils.getAPIService();
@@ -164,15 +159,18 @@ public class ItemListActivity extends AppCompatActivity {
                     hud.dismiss();
                 }
             }
+
             @Override
             public void onFailure(Call<GamesList> call, Throwable t) {
                 hud.dismiss();
-                Log.e("getDataFromAPI","Request failed.");
+                Toasty.error(ItemListActivity.this, "Connection problem!", Toast.LENGTH_LONG).show();
+
+                Log.e("getDataFromAPI", "Request failed.");
             }
         });
     }
 
-    public static void initiateDetailedScreen(ItemListActivity mParentActivity, Game game, View view) {
+    public static void initiateDetailedScreen(ItemListActivity mParentActivity, Game game, View view, boolean mTwoPane) {
         if (mTwoPane) {
             Bundle arguments = new Bundle();
             arguments.putSerializable(ItemDetailFragment.ARG_GAME, game);

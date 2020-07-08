@@ -2,17 +2,16 @@ package com.veyselyenilmez.masterdetailcasestudy;
 
 import android.app.Activity;
 import android.os.Bundle;
-
-import com.google.android.material.appbar.CollapsingToolbarLayout;
-
+import com.bumptech.glide.Glide;
+import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
-
 import com.veyselyenilmez.masterdetailcasestudy.data.model.Game;
+import me.zhanghai.android.materialratingbar.MaterialRatingBar;
 
 /**
  * A fragment representing a single Item detail screen.
@@ -25,7 +24,7 @@ public class ItemDetailFragment extends Fragment {
      * The fragment argument representing the item that this fragment
      * represents.
      */
-    public static final String ARG_GAME ="game";
+    static final String ARG_GAME ="game";
 
     private Game game;
 
@@ -43,14 +42,15 @@ public class ItemDetailFragment extends Fragment {
         assert getArguments() != null;
         if (getArguments().containsKey(ARG_GAME)) {
 
-            Activity activity = this.getActivity();
-            final CollapsingToolbarLayout appBarLayout = (CollapsingToolbarLayout) activity.findViewById(R.id.toolbar_layout);
-
             game = (Game) getArguments().getSerializable(ARG_GAME);
             assert game != null;
 
-            if (appBarLayout != null) {
-                appBarLayout.setTitle(game.getName());
+            Activity activity = this.getActivity();
+            assert activity != null;
+            final Toolbar toolbar = activity.findViewById(R.id.toolbar);
+
+            if (toolbar != null) {
+                toolbar.setTitle(game.getName());
             }
         }
     }
@@ -61,7 +61,15 @@ public class ItemDetailFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.item_detail, container, false);
 
         if (game != null) {
-            ((TextView) rootView.findViewById(R.id.item_detail)).setText(game.getDescription());
+
+            ImageView imageView = rootView.findViewById(R.id.imageView);
+            Glide.with(this).load(game.getBackgroundImage()).into(imageView);
+
+            ((TextView) rootView.findViewById(R.id.game_name)).setText(game.getName());
+            ((TextView) rootView.findViewById(R.id.game_description)).setText(game.getDescription());
+            ((TextView) rootView.findViewById(R.id.game_release_date)).setText(game.getReleased());
+            ((MaterialRatingBar) rootView.findViewById(R.id.game_rating_bar)).setRating(game.getRating().floatValue());
+
         }
 
         return rootView;
