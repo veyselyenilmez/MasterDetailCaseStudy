@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Master Detail Case Study</string>
     <string name="title_item_detail">Item Detail</string>
+    <string name="item_detail_layout_image_view_description">Background image from API</string>
 </resources>

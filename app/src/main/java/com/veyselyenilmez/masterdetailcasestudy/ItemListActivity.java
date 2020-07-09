@@ -92,7 +92,6 @@ public class ItemListActivity extends AppCompatActivity {
                             initiateDetailedScreen(mParentActivity, game, view, mTwoPane);
                         }
                     }
-
                     @Override
                     public void onFailure(Call<Game> call, Throwable t) {
                         Log.e("getDetailedDataById", "Request failed.");
@@ -144,7 +143,6 @@ public class ItemListActivity extends AppCompatActivity {
     }
 
     public void getDataFromAPI() {
-        APIService mAPIService = APIUtils.getAPIService();
         mAPIService.getData().enqueue(new Callback<GamesList>() {
             @Override
             public void onResponse(Call<GamesList> call, Response<GamesList> response) {
