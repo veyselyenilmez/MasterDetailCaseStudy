@@ -41,7 +41,6 @@ public class ItemDetailFragment extends Fragment {
 
         assert getArguments() != null;
         if (getArguments().containsKey(ARG_GAME)) {
-
             game = (Game) getArguments().getSerializable(ARG_GAME);
             assert game != null;
 

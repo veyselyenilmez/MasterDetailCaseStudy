@@ -44,7 +44,9 @@ public class ItemListActivity extends AppCompatActivity {
      */
     private static boolean mTwoPane;
 
+
     private KProgressHUD hud;
+
 
     private static APIService mAPIService = APIUtils.getAPIService();
 
@@ -65,9 +67,14 @@ public class ItemListActivity extends AppCompatActivity {
             mTwoPane = true;
         }
 
-        showLoadingDialog();
+            // showing a loading dialog on the screen until we get results from API.
+            showLoadingDialog();
 
-        getDataFromAPI();
+            // Making a request from the api and setting up the recyclerview adapter
+            // when we get results.
+            // And dismissing the loading dialog.
+            getDataFromAPIAndSetupRecyclerView();
+
     }
 
     private void setupRecyclerView(@NonNull RecyclerView recyclerView, GamesList gamesList) {
@@ -83,6 +90,11 @@ public class ItemListActivity extends AppCompatActivity {
         private final View.OnClickListener mOnClickListener = new View.OnClickListener() {
             @Override
             public void onClick(final View view) {
+
+                // Making a network request for the detailed data of the chosen game
+                // according to the id of it.
+                // And then transferring the result to the new screen.
+
                 Game game = (Game) view.getTag();
                 mAPIService.getDetailedDataById(game.getId()).enqueue(new Callback<Game>() {
                     @Override
@@ -92,6 +104,7 @@ public class ItemListActivity extends AppCompatActivity {
                             initiateDetailedScreen(mParentActivity, game, view, mTwoPane);
                         }
                     }
+
                     @Override
                     public void onFailure(Call<Game> call, Throwable t) {
                         Log.e("getDetailedDataById", "Request failed.");
@@ -142,7 +155,7 @@ public class ItemListActivity extends AppCompatActivity {
         }
     }
 
-    public void getDataFromAPI() {
+    public void getDataFromAPIAndSetupRecyclerView() {
         mAPIService.getData().enqueue(new Callback<GamesList>() {
             @Override
             public void onResponse(Call<GamesList> call, Response<GamesList> response) {
@@ -168,6 +181,10 @@ public class ItemListActivity extends AppCompatActivity {
         });
     }
 
+
+            // Taking the data as a parameter. If there are two panes
+            // sending it to the ItemDetailFragment
+            // and if there is one pane sending it to the ItemDetailActivity.
     public static void initiateDetailedScreen(ItemListActivity mParentActivity, Game game, View view, boolean mTwoPane) {
         if (mTwoPane) {
             Bundle arguments = new Bundle();
@@ -197,4 +214,5 @@ public class ItemListActivity extends AppCompatActivity {
                 .setWindowColor(Color.DKGRAY)
                 .show();
     }
+
 }
